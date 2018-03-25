@@ -1,0 +1,56 @@
+<style>
+  td{
+    width: 150px;
+    height: 150px;
+    font-size: 120px;
+    text-align: center;
+  }
+</style>
+<body id="bodyId">
+  <br>
+  <center>
+    <table border="1">
+      <tr>
+        <td id="tb11"></td>
+        <td id="tb12"></td>
+        <td id="tb13"></td>
+      </tr>
+      <tr>
+        <td id="tb21"></td>
+        <td id="tb22"></td>
+        <td id="tb23"></td>
+      </tr>
+      <tr>
+        <td id="tb31"></td>
+        <td id="tb32"></td>
+        <td id="tb33"></td>
+      </tr>
+    </table>
+    <div id="clear">
+      <select id="user">
+          <option value="X">X</option>
+          <option value="O">O</option>
+      </select>
+      <button id="play">Play</button>
+    </div>
+  <center>
+
+</body>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+<script src="/jogo"></script>
+<script>
+  $(function () {
+    var socket=io();
+    socket.on('available message', function(msg){
+      var select = document.getElementById("user");
+      (msg.option=="X") ? select.remove(0) : select.remove(1);
+    });
+    var jogo = new Jogo(socket);
+    document.getElementById("play").addEventListener("click",()=>{
+      socket.emit('available message',{ option:document.getElementById("user").value });
+      jogo.play();
+    })
+  });
+</script>
