@@ -1,5 +1,6 @@
 # socket-nodejs-Tic-tac-toe
-Simple example of socket in nodejs
+Simple example of socket in nodejs<br>
+Tic-tac-toe
 
 ## Demo
 <img width="1000" src="https://github.com/paulohrodrigues/socket-nodejs/blob/master/img/git.gif?raw=true">
