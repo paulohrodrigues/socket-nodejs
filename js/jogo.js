@@ -12,33 +12,89 @@ class Jogo {
             tb32:-1,
             tb33:-1
         }
-        this.user=null;
+        this.idGame=-1;
+        this.status=false;
+        this.user=(new Date()).getTime();
         this.round=0;
         this.socket=socket;
+        this.simbolo="X";
+        this.userAdversario = -1; 
     }
 
     play(){
-        this.user=document.getElementById("user").value;
-        this.callConection();
-        this.logic();
-        this.lookMap();
-        this.lookEndGame();
-        var self=this;
-        setTimeout(()=>{
-            if(self.round==0){
-                alert("Aguardando Adversário!");
-            }else{
-                alert("Sua Vez!");
-            }
-        },500);
+        this.init();
+        this.look();
+        this.actionEvent();
         document.getElementById("clear").style="visibility: hidden;";
+    }
+    look(){
+        var self=this;
+        this.socket.on('send message', function(msg){
+            switch(msg.option){
+                case"init":{
+                    self.lookInit(msg);        
+                    break;
+                }
+                case"res":{
+                    self.lookRes(msg);
+                    break;
+                }
+                case"game_over":{
+                    self.lookGameOver(msg);
+                    break;
+                }
+                case"game":{
+                    self.lookGame(msg);
+                    break;
+                }
+            }
+        });
+    }
+
+    init(){
+        this.socket.emit('send message',{option:"init",user:this.user});
+    }
+
+    lookInit(msg){
+        if(msg.user!=this.user){
+            if(this.status==false){
+                this.status=true;
+                this.idGame=msg.idGame;
+                this.simbolo="X";
+                this.round=1;
+                this.userAdversario=msg.user;
+                alert("Sua Vez!");
+                this.socket.emit('send message',{option:"res",user:this.user,userAdversario:msg.user,idGame:this.idGame});
+            }
+        }
     }
 
 
+    lookRes(msg){
+        if(this.user==msg.userAdversario && this.status==false){
+            this.status=true;
+            this.idGame=msg.idGame;
+            this.simbolo="O";
+            this.round=0;
+            this.userAdversario=msg.user;
+        }
+    }
 
 
-    logic(){    
-        this.actionEvent();
+    lookGameOver(msg){
+        if(msg.userAdversario==this.user){
+            alert("Você Perdeu!");
+        }
+    }
+
+
+    lookGame(msg){
+        if(msg.userAdversario==this.user){
+            this.round=1;
+            this.map[msg.idMap]=(this.simbolo=="O")?"X":"O";
+            document.getElementById(msg.idMap).innerHTML=this.map[msg.idMap];
+            // alert("Sua Vez");
+        }
     }
 
     actionEvent(){
@@ -55,91 +111,30 @@ class Jogo {
         }
     }
 
-
     check(id){
         if(this.map[id]==-1){
-            this.map[id]=this.user;
-            document.getElementById(id).innerHTML=this.user;
+            this.map[id]=this.simbolo;
+            document.getElementById(id).innerHTML=this.simbolo;
             this.round=0;
             if(this.checkEndGame(id)==true){
                 alert("Você Venceu!");
-                this.socket.emit('endGame message',{user:this.user});
+                this.socket.emit('send message',{option:"game_over",userAdversario:this.userAdversario});
             }else{
-                this.socket.emit('sendRound message',{option:"res",user:this.user,round:this.round});
-                this.socket.emit('sendMap message',{user:this.user,idMap:id});
+                this.socket.emit('send message',{option:"game",userAdversario:this.userAdversario,idMap:id});
             }
         }else{
             alert("Esse lugar já está marcado");
         }
     }
 
-    lookEndGame(){
-        var self=this;
-        this.socket.on('endGame message', function(msg){
-            if(self.user!=msg.user){
-                alert("Você Perdeu!");
-            }
-        });
-    }
-
 
     checkEndGame(){
         for(let i=1;i<=3;i++){
-            if( this.map["tb1"+i]==this.user && this.map["tb2"+i]==this.user && this.map["tb3"+i]==this.user ) return true;
-            if( this.map["tb"+i+"1"]==this.user && this.map["tb"+i+"2"]==this.user && this.map["tb"+i+"3"]==this.user ) return true;
+            if( this.map["tb1"+i]==this.simbolo && this.map["tb2"+i]==this.simbolo && this.map["tb3"+i]==this.simbolo ) return true;
+            if( this.map["tb"+i+"1"]==this.simbolo && this.map["tb"+i+"2"]==this.simbolo && this.map["tb"+i+"3"]==this.simbolo ) return true;
         }
-        if( this.map["tb11"]==this.user && this.map["tb22"]==this.user && this.map["tb33"]==this.user ) return true;
-        if( this.map["tb13"]==this.user && this.map["tb22"]==this.user && this.map["tb31"]==this.user ) return true;
+        if( this.map["tb11"]==this.simbolo && this.map["tb22"]==this.simbolo && this.map["tb33"]==this.simbolo ) return true;
+        if( this.map["tb13"]==this.simbolo && this.map["tb22"]==this.simbolo && this.map["tb31"]==this.simbolo ) return true;
         return false;
     }
-
-
-    callConection(){
-        this.callRound();
-        this.sendRound();
-        this.receiveRound();
-    }
-
-    lookMap(){
-        var self=this;
-        this.socket.on('sendMap message', function(msg){
-            if(self.user!=msg.user){
-                self.updateMap(msg.idMap);
-            }
-        });
-    }
-
-    updateMap(id){
-        this.map[id]=(this.user=="O")?"X":"O";
-        document.getElementById(id).innerHTML=this.map[id];
-    }
-
-    callRound(){
-        this.socket.emit('callRound message',{option:"what",user:this.user});
-    }
-
-    sendRound(){
-        var self=this;
-        this.socket.on('callRound message', function(msg){
-            if(self.user!=msg.user){
-                self.socket.emit('sendRound message',{option:"res",user:self.user,round:self.round});
-            }
-        });
-    }
-
-    receiveRound(){
-        var self=this;
-        this.socket.on('sendRound message', function(msg){
-            if(self.user!=msg.user){
-                console.log(self.user+" recebe de "+msg.user);
-                self.round=(msg.round==0)?1:0;
-                if(self.round==1){
-                    // alert("Sua Vez");
-                }
-            }
-        });
-    }
-
-
-
 }
