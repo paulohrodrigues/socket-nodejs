@@ -10,6 +10,11 @@ app.get('/', function(req, res){
 app.get('/jogo', function(req, res){
   res.sendFile(__dirname + '/js/jogo.js');
 });
+
+app.get('/jquery', function(req, res){
+  res.sendFile(__dirname + '/js/jquery.js');
+});
+
 io.on('connection', function(socket){
   socket.on('sendRound message', function(config){
     console.log(config);
