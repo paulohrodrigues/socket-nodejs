@@ -4,6 +4,7 @@ var io = require('socket.io')(http);
 var port = process.env.PORT || 3000;
 
 var i=0;
+var valid = ["init","res","game","game_over"];
 
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/index.html');
@@ -21,6 +22,9 @@ io.on('connection', function(socket){
   socket.on('send message', function(config){
     if(config.option=="init"){
       config["idGame"]=(i++);
+    }
+    if(valid.indexOf(config.option)==-1){
+      config={"option":"error"};
     }
     io.emit('send message', config);
   });
